@@ -1,5 +1,5 @@
 {
-  "name": "friendly-competitive-companion",
+  "name": "cp-companion",
   "description": "Listener of Competitive Companion firefox plugin",
   "version": "1.0.0",
   "license": "MIT",
@@ -12,6 +12,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/andrefakhoury/friendly-competitive-companion"
+    "url": "https://github.com/andrefakhoury/cp-companion"
   }
 }
