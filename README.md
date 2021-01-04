@@ -1,4 +1,4 @@
-# friendly-competitive-companion
+# cp-companion
 
 Competitive Companion listener, automatically creates source and sample files for tasks
 
