@@ -1,0 +1,17 @@
+{
+  "name": "friendly-competitive-companion",
+  "description": "Listener of Competitive Companion firefox plugin",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrefakhoury/friendly-competitive-companion"
+  }
+}
