@@ -1,7 +1,7 @@
 const app = require('express')();
 const bodyParser = require('body-parser');
 const fs = require('fs');
-const { exec } = require("child_process");
+const { execSync } = require("child_process");
 const path = require('path');
 
 const port = 10043;
@@ -11,72 +11,6 @@ const relPathTasks = `problems/contest`; // relative path to task folder
 const pathTasks = `/home/fakhoury/Documents/competitive-programming/${relPathTasks}`; // absolute path to tasks
 const pathCMakeList = `/home/fakhoury/Documents/competitive-programming/CMakeLists.txt`; // cmakelists absolute path
 const pathTemplate = `/home/fakhoury/Documents/competitive-programming/lib/misc/environment/clion_template.cpp`; // path to template
-
-// create source file and assert full path is created
-function createSource(taskPath, sourceName) {
-	fs.mkdirSync(taskPath, { recursive: true}, (err) => {
-		if (err) throw err;
-		console.log(` > Created path ${taskPath}`);
-	});
-
-	fs.copyFileSync(pathTemplate, `${taskPath}/${sourceName}.cpp`, (err) => {
-		if (err) throw err;
-		console.log(` > Created template ${sourceName}.cpp`);
-	});
-}
-
-// add the executable to CMakeLists.txt
-function updateCMakeLists(taskPath, taskFolder, taskName, sourceName) {
-	const cmExec = `add_executable(${taskName} ${relPathTasks}/${taskFolder}/${sourceName}.cpp)`;
-	const cmProp = `set_target_properties(${taskName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${taskPath}/")`;
-
-	fs.readFileSync(pathCMakeList, function(err, data) {
-		if (err) throw err;
-		if (!data.includes(cmExec)) {
-			fs.appendFileSync(pathCMakeList, `\n${cmExec}\n${cmProp}\n`, (err) => {
-				if (err) throw err;
-				console.log(` > Updated CMakeLists`);
-			});
-		}
-	});
-}
-
-// delete old samples and create new ones
-function createSamples(taskPath, testCases) {
-	// delete previous input files
-	fs.readdirSync(taskPath, (err, files) => {
-		if (err) return console.log(err);
-
-		files.forEach((file, index) => {
-			if (path.extname(file) == ".in" || path.extname(file) == ".out") {
-				fs.unlinkSync(`${taskPath}/${file}`, (err2) => {
-					if (err2) return console.log(err2);
-					console.log(` >>> Deleted old sample ${file}`);
-				});
-			}
-		});
-	});
-
-	// create new samples
-	for (var test in testCases) {
-		fs.writeFileSync(`${taskPath}/${test}.in`, `${testCases[test].input}`, function(err) {
-			if (err) return console.log(err);
-			console.log(` >> Created input ${test}`);
-		});
-
-		fs.writeFileSync(`${taskPath}/${test}.out`, `${testCases[test].output}`, function(err) {
-			if (err) return console.log(err);
-			console.log(` >> Created output ${test}`);
-		});
-	}
-}
-
-// open CLion on specified line
-function openSourceOnIDE(taskPath, sourceName) {
-	exec(`/opt/clion-2020.3/bin/clion.sh --line 28 ${taskPath}/${sourceName}.cpp`, function(err) {
-		if (err) return console.log(err);
-	});
-}
 
 // returns the task name according to problem name.
 // This could be waaay better, but works nicely for codeforces and atcoder by now
@@ -102,10 +36,54 @@ app.post('/', (req, res) => {
 
 	console.log(`Parsing problem ${data.name} [${taskName}]`);
 
-	createSource(taskPath, sourceName);
-	updateCMakeLists(taskPath, taskFolder, taskName, sourceName);
-	createSamples(taskPath, data.tests);
-	openSourceOnIDE(taskPath, sourceName);
+	fs.mkdirSync(taskPath, { recursive: true}, (err) => { if (err) throw err; });
+	console.log(` > Created path ${taskPath}`);
+
+	fs.copyFileSync(pathTemplate, `${taskPath}/${sourceName}.cpp`, (err) => { if (err) throw err; });
+	console.log(` > Created template ${sourceName}.cpp`);
+
+	fs.readdir(taskPath, (err, files) => {
+		if (err) return console.log(err);
+
+		files.forEach((file, index) => {
+			if (path.extname(file) == ".in" || path.extname(file) == ".out") {
+				fs.unlinkSync(`${taskPath}/${file}`, (err2) => {
+					if (err2) return console.log(err2);
+					console.log(` >>> Deleted old sample ${file}`);
+				});
+			}
+		});
+
+		// create new samples
+		for (var test in data.tests) {
+			fs.writeFileSync(`${taskPath}/${test}.in`, `${data.tests[test].input}`, function(err2) {
+				if (err2) return console.log(err2);
+				console.log(` >> Created input ${test}`);
+			});
+
+			fs.writeFileSync(`${taskPath}/${test}.out`, `${data.tests[test].output}`, function(err2) {
+				if (err2) return console.log(err2);
+				console.log(` >> Created output ${test}`);
+			});
+		}
+	});
+
+	const cmExec = `add_executable(${taskName} ${relPathTasks}/${taskFolder}/${sourceName}.cpp)`;
+	const cmProp = `set_target_properties(${taskName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${taskPath}/")`;
+
+	fs.readFile(pathCMakeList, (err, data) => {
+		if (err) throw err;
+		if (!data.includes(cmExec)) {
+			fs.appendFileSync(pathCMakeList, `\n${cmExec}\n${cmProp}\n`, (err2) => {
+				if (err2) throw err2;
+				console.log(` > Updated CMakeLists`);
+			});
+		}
+	});
+	
+	execSync(`/opt/clion-2020.3/bin/clion.sh --line 28 ${taskPath}/${sourceName}.cpp`, function(err) { if (err) return console.log(err); });
+
+	console.log(`Finished parsing ${data.name}`);
 
 	res.sendStatus(200);
 });
